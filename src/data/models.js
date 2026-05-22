@@ -125,6 +125,14 @@ export const goals = ["Launch a new product", "Drive appointments", "Promote a l
 
 export const fontStyles = ["Modern sans", "Bold condensed", "Editorial serif", "Friendly rounded", "Minimal mono"];
 
+export const aiMediaProviders = {
+  art: [
+    { id: "openai", name: "OpenAI image" },
+    { id: "gemini", name: "Gemini / Nano Banana" },
+  ],
+  video: [{ id: "gemini-veo", name: "Google Veo" }],
+};
+
 export function createBusinessProfile(brand) {
   return {
     industry: brand.businessProfile?.industry ?? brand.industry ?? "",
@@ -152,6 +160,13 @@ export function createAdBrief(brand) {
     landingPage: brand.adBrief?.landingPage ?? brand.businessProfile?.bookingLink ?? "",
     location: brand.adBrief?.location ?? brand.businessProfile?.location ?? "",
     notes: brand.adBrief?.notes ?? "Start with conservative copy, clear CTA, and no exaggerated claims.",
+  };
+}
+
+export function createMediaSettings(brand) {
+  return {
+    artProvider: brand.mediaSettings?.artProvider ?? "openai",
+    videoProvider: brand.mediaSettings?.videoProvider ?? "gemini-veo",
   };
 }
 
@@ -201,6 +216,7 @@ export function normalizeBrand(brand) {
       ...createBusinessProfile(fallback),
       ...createBusinessProfile(brand),
     },
+    mediaSettings: createMediaSettings(brand),
     adBrief: createAdBrief(brand),
     adVariations: brand.adVariations ?? [],
     logoText: brand.logoText ?? brand.initials ?? fallback.logoText,

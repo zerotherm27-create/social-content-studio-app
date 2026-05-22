@@ -1,5 +1,5 @@
+import { generateVideoForProvider } from "./_ai-media.js";
 import { writeJson } from "./_shared.js";
-import { generateArtForProvider } from "./_ai-media.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -8,6 +8,5 @@ export default async function handler(req, res) {
   }
 
   const { brand, post } = req.body;
-
-  writeJson(res, 200, await generateArtForProvider({ brand, post, env: process.env }));
+  writeJson(res, 200, await generateVideoForProvider({ brand, post, env: process.env }));
 }

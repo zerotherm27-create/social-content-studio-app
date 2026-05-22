@@ -6,6 +6,7 @@ AI marketing studio for generating, scheduling, storing, and publishing branded 
 
 - Multi-brand workspaces with isolated business profiles, briefs, selected platforms, drafts, and queues.
 - AI generation endpoint for captions, hashtags, art card prompts, video scripts, and preview copy.
+- Provider-based media generation for OpenAI image, Gemini / Nano Banana image, and Google Veo video jobs.
 - Local deterministic fallback when `OPENAI_API_KEY` is not configured.
 - Local persistence through `localStorage`.
 - Service boundaries for generation, scheduling, storage, and future API replacement.
@@ -28,8 +29,7 @@ Restart the dev server after changing `.env`.
 
 ## Future Integration Points
 
-- Add Gemini / Nano Banana as a second image provider beside the current OpenAI image endpoint.
-- Extend `vite.config.js` or a future backend API to generate rendered videos.
+- Add a poll/download worker for completed Veo videos.
 - Replace `src/services/storage.js` with database calls for users, brands, campaigns, posts, and publish logs.
 - Add posting adapters under `src/services/platforms/` for Meta, LinkedIn, TikTok, YouTube, Threads, and Google Business.
 - Move scheduled publishing into a backend job queue once the app has server/API infrastructure.
@@ -86,3 +86,22 @@ Add the matching credentials in `.env` locally or Vercel Project Settings:
 - TikTok / YouTube: `TIKTOK_ACCESS_TOKEN`, `TIKTOK_OPEN_ID`, `YOUTUBE_ACCESS_TOKEN`, `YOUTUBE_CHANNEL_ID`
 
 Instagram, Threads, TikTok, and YouTube need public hosted media URLs for real media publishing. Generated data URLs work for preview, but the next production step is storing generated assets in Blob/S3-style storage before posting.
+
+## Google Gemini / Nano Banana / Veo Setup
+
+Katmon Studio can use Google media models beside OpenAI:
+
+- Art cards: select `Gemini / Nano Banana` in the Brand Kit and set `GEMINI_API_KEY`.
+- Videos: select `Google Veo` and set `GEMINI_API_KEY`.
+
+Recommended environment variables:
+
+```bash
+GEMINI_API_KEY=your_google_ai_studio_key
+GEMINI_IMAGE_MODEL=gemini-3.1-flash-image-preview
+GEMINI_VIDEO_MODEL=veo-3.1-generate-preview
+MEDIA_ART_PROVIDER=openai
+MEDIA_VIDEO_PROVIDER=gemini-veo
+```
+
+Veo generation is long-running, so the app starts the video job and stores the operation name on the post. A later production phase should add a poll/download worker that saves finished MP4 files to Blob or another media bucket.

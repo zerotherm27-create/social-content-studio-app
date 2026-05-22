@@ -102,3 +102,24 @@ export async function storeGeneratedArtCard({ brand, post, result, env }) {
     asset,
   };
 }
+
+export async function storeGeneratedVideo({ brand, post, result, env }) {
+  const videoUrl = result.videoUrl;
+  if (!videoUrl) return result;
+
+  const isDataUrl = videoUrl.startsWith("data:");
+  const asset = await uploadMediaAsset({
+    brand,
+    post,
+    dataUrl: isDataUrl ? videoUrl : undefined,
+    sourceUrl: isDataUrl ? undefined : videoUrl,
+    contentType: "video/mp4",
+    env,
+  });
+
+  return {
+    ...result,
+    videoUrl: asset.url || videoUrl,
+    asset,
+  };
+}

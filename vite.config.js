@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 import { storeGeneratedArtCard } from "./api/_media-storage.js";
+import { generateArtForProvider, generateVideoForProvider } from "./api/_ai-media.js";
 import { getIntegrationStatus, publishPostToPlatform, publishQueue } from "./api/_platforms.js";
 import { generatePostsForBrand, previewForBrand } from "./src/services/contentGenerator.js";
 
@@ -337,10 +338,25 @@ function apiPlugin(env) {
 
         try {
           const payload = await readRequestBody(req);
-          const result = await generateArtWithOpenAI({ post: payload.post, brand: payload.brand, env });
+          const result = await generateArtForProvider({ post: payload.post, brand: payload.brand, env });
           writeJson(res, 200, result);
         } catch (error) {
           writeJson(res, 500, { error: error instanceof Error ? error.message : "Unknown art generation error" });
+        }
+      });
+
+      server.middlewares.use("/api/generate-video", async (req, res) => {
+        if (req.method !== "POST") {
+          writeJson(res, 405, { error: "Method not allowed" });
+          return;
+        }
+
+        try {
+          const payload = await readRequestBody(req);
+          const result = await generateVideoForProvider({ post: payload.post, brand: payload.brand, env });
+          writeJson(res, 200, result);
+        } catch (error) {
+          writeJson(res, 500, { error: error instanceof Error ? error.message : "Unknown video generation error" });
         }
       });
 

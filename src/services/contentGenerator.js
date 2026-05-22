@@ -128,3 +128,19 @@ export async function generateArtCardForPost(brand, post) {
 
   return response.json();
 }
+
+export async function generateVideoForPost(brand, post) {
+  const response = await fetch("/api/generate-video", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ brand, post }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Video generation failed with ${response.status}`);
+  }
+
+  return response.json();
+}

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { adObjectives, adPlatforms, createInitialWorkspace, fontStyles, goals, normalizeBrand, platforms, tones } from "./data/models.js";
+import { adObjectives, adPlatforms, aiMediaProviders, createInitialWorkspace, fontStyles, goals, normalizeBrand, platforms, tones } from "./data/models.js";
 import { generateAdVariations } from "./services/adsGenerator.js";
-import { generateArtCardForPost, generatePostsForBrand, generatePostsForBrandWithAI, previewForBrand } from "./services/contentGenerator.js";
+import { generateArtCardForPost, generatePostsForBrand, generatePostsForBrandWithAI, generateVideoForPost, previewForBrand } from "./services/contentGenerator.js";
 import { fetchIntegrationStatus, publishPost, publishQueue } from "./services/integrations.js";
 import { runAutopilotPlan } from "./services/autopilot.js";
 import { schedulePosts, workspaceTotals } from "./services/scheduler.js";
@@ -40,6 +40,7 @@ function App() {
   const [generationState, setGenerationState] = useState({ status: "idle", message: "AI generator ready" });
   const [selectedPreviewPostId, setSelectedPreviewPostId] = useState(null);
   const [artGenerationState, setArtGenerationState] = useState({ status: "idle", message: "Art generator ready" });
+  const [videoGenerationState, setVideoGenerationState] = useState({ status: "idle", message: "Video generator ready" });
   const [autopilotCommand, setAutopilotCommand] = useState("Generate 2 weeks of content for this brand. Post daily to all active channels and schedule it.");
   const [autopilotState, setAutopilotState] = useState({ status: "idle", message: "Autopilot ready" });
   const [integrationStatus, setIntegrationStatus] = useState([]);
@@ -97,6 +98,19 @@ function App() {
         ...brand,
         adBrief: {
           ...brand.adBrief,
+          ...patch,
+        },
+      })),
+    }));
+  }
+
+  function patchMediaSettings(patch) {
+    setWorkspace((current) => ({
+      ...current,
+      brands: updateBrand(current.brands, current.activeBrandId, (brand) => ({
+        ...brand,
+        mediaSettings: {
+          ...brand.mediaSettings,
           ...patch,
         },
       })),
@@ -271,10 +285,48 @@ function App() {
       }));
       setArtGenerationState({
         status: result.source,
-        message: result.source === "openai" ? `Art card generated with ${result.model}` : `Fallback art card created: ${result.reason}`,
+        message: result.source === "openai" || result.source === "gemini" ? `Art card generated with ${result.model}` : `Fallback art card created: ${result.reason}`,
       });
     } catch (error) {
       setArtGenerationState({ status: "fallback", message: error instanceof Error ? error.message : "Art generation failed" });
+    }
+  }
+
+  async function generateVideo(postId) {
+    const post = activeBrand.posts.find((item) => item.id === postId);
+    if (!post) return;
+
+    setSelectedPreviewPostId(post.id);
+    setPreviewMode("video");
+    setVideoGenerationState({ status: "loading", message: `Starting ${post.platformName} video generation...` });
+
+    try {
+      const result = await generateVideoForPost(activeBrand, post);
+      setWorkspace((current) => ({
+        ...current,
+        brands: updateBrand(current.brands, activeBrand.id, (brand) => ({
+          ...brand,
+          posts: brand.posts.map((item) =>
+            item.id === post.id
+              ? {
+                  ...item,
+                  videoUrl: result.videoUrl,
+                  videoSource: result.source,
+                  videoModel: result.model,
+                  videoStatus: result.status,
+                  videoOperationName: result.operationName,
+                  videoAsset: result.asset,
+                }
+              : item,
+          ),
+        })),
+      }));
+      setVideoGenerationState({
+        status: result.status || result.source,
+        message: result.operationName ? `Veo video job started with ${result.model}` : result.reason || "Video generation request sent",
+      });
+    } catch (error) {
+      setVideoGenerationState({ status: "failed", message: error instanceof Error ? error.message : "Video generation failed" });
     }
   }
 
@@ -646,6 +698,22 @@ function App() {
                     ))}
                   </select>
                 </label>
+                <label>
+                  Art provider
+                  <select value={activeBrand.mediaSettings.artProvider} onChange={(event) => patchMediaSettings({ artProvider: event.target.value })}>
+                    {aiMediaProviders.art.map((provider) => (
+                      <option key={provider.id} value={provider.id}>{provider.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Video provider
+                  <select value={activeBrand.mediaSettings.videoProvider} onChange={(event) => patchMediaSettings({ videoProvider: event.target.value })}>
+                    {aiMediaProviders.video.map((provider) => (
+                      <option key={provider.id} value={provider.id}>{provider.name}</option>
+                    ))}
+                  </select>
+                </label>
               </div>
               <label className="logo-upload">
                 Upload logo
@@ -747,11 +815,16 @@ function App() {
                 )
               ) : (
                 <article className="video-card">
-                  <div className="video-frame">
-                    <div className="video-progress" />
-                    <span>00:12</span>
-                  </div>
+                  {previewPost?.videoUrl ? (
+                    <video className="video-frame" controls src={previewPost.videoUrl} />
+                  ) : (
+                    <div className="video-frame">
+                      <div className="video-progress" />
+                      <span>{previewPost?.videoStatus === "processing" ? "Veo" : "00:12"}</span>
+                    </div>
+                  )}
                   <div className="subtitle-strip">{preview.subtitle}</div>
+                  {previewPost?.videoOperationName ? <p className="panel-note">Veo job started: {previewPost.videoOperationName}</p> : null}
                 </article>
               )}
             </div>
@@ -845,6 +918,7 @@ function App() {
                 isPreviewed={previewPost?.id === post.id}
                 key={post.id}
                 onGenerateArt={generateArtCard}
+                onGenerateVideo={generateVideo}
                 onPreview={setSelectedPreviewPostId}
                 onPublish={publishSinglePost}
                 onSchedule={scheduleSinglePost}
@@ -939,7 +1013,7 @@ function AdCard({ ad }) {
   );
 }
 
-function PostCard({ isPreviewed, post, onGenerateArt, onPreview, onPublish, onSchedule, onToggle }) {
+function PostCard({ isPreviewed, post, onGenerateArt, onGenerateVideo, onPreview, onPublish, onSchedule, onToggle }) {
   return (
     <article className={`post-card ${isPreviewed ? "is-previewed" : ""}`}>
       <header>
@@ -966,8 +1040,8 @@ function PostCard({ isPreviewed, post, onGenerateArt, onPreview, onPublish, onSc
         {post.videoScript ? <p>{post.videoScript}</p> : null}
       </details>
       <div className="media-status">
-        <span>{post.artAsset?.provider === "vercel_blob" ? "Hosted media ready" : post.artImageUrl ? "Art image attached" : "No art image yet"}</span>
-        <span>{post.artSource === "openai" ? post.artModel : "OpenAI image ready"}</span>
+        <span>{post.videoStatus === "processing" ? "Veo video processing" : post.artAsset?.provider === "vercel_blob" ? "Hosted media ready" : post.artImageUrl ? "Art image attached" : "No art image yet"}</span>
+        <span>{post.videoModel || post.artModel || "Media provider ready"}</span>
       </div>
       <div className="card-actions">
         <span>
@@ -981,6 +1055,11 @@ function PostCard({ isPreviewed, post, onGenerateArt, onPreview, onPublish, onSc
           <button onClick={() => onGenerateArt(post.id)} type="button">
             Generate art
           </button>
+          {post.media === "Video" ? (
+            <button onClick={() => onGenerateVideo(post.id)} type="button">
+              Generate video
+            </button>
+          ) : null}
           <button onClick={() => onSchedule(post.id)} type="button">
             Schedule
           </button>
