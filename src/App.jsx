@@ -436,11 +436,11 @@ function App() {
           </div>
         </header>
 
-        <section className="workflow-strip" aria-label="Workflow">
-          <WorkflowStep label="Brief" status="Active" text="Set brand, goal, audience, and platform mix." />
-          <WorkflowStep label="Generate" status={activeBrand.posts[0]?.generationSource === "openai" ? "AI" : "Ready"} text="Create captions, prompts, and scripts." />
-          <WorkflowStep label="Review" status={`${selectedPostCount} selected`} text="Open creative details and choose posts." />
-          <WorkflowStep label="Schedule" status={`${activeBrand.queue.length} queued`} text="Push approved drafts into the queue." />
+        <section className="status-overview" aria-label="Workspace status">
+          <StatusCard label="Drafts" value={activeBrand.posts.length} detail={`${selectedPostCount} selected`} />
+          <StatusCard label="Scheduled" value={activeBrand.queue.length} detail={`${totals.scheduled} total queued`} />
+          <StatusCard label="AI" value={activeBrand.posts[0]?.generationSource === "openai" ? "Live" : "Fallback"} detail={generationState.message} />
+          <StatusCard label="APIs" value={`${integrationStatus.filter((item) => item.status === "ready").length}/${platforms.length}`} detail={publishState.message} />
         </section>
 
         <section className={`autopilot-panel ${autopilotState.status}`}>
@@ -463,45 +463,6 @@ function App() {
             </button>
             <p>Default mode schedules everything locally for review. Real auto-posting turns on after platform accounts are connected.</p>
           </div>
-        </section>
-
-        <section className="multi-brand-strip">
-          <div>
-            <p className="eyebrow">Multi-brand mode</p>
-            <h3>Run content for every client without mixing calendars, assets, or channels.</h3>
-          </div>
-          <div className="workspace-stats">
-            <WorkspaceStat label="brands" value={totals.brands} />
-            <WorkspaceStat label="drafts" value={totals.drafts} />
-            <WorkspaceStat label="scheduled" value={totals.scheduled} />
-          </div>
-        </section>
-
-        <section className={`ai-status-bar ${generationState.status}`}>
-          <div>
-            <p className="eyebrow">AI generation</p>
-            <strong>{generationState.message}</strong>
-            <small>{activeBrand.posts[0]?.generationSource === "openai" ? "Live model output is being used for this brand." : "Add an OpenAI API key to switch this from fallback to live AI output."}</small>
-          </div>
-          <span>{activeBrand.posts[0]?.generationSource === "openai" ? "OpenAI powered" : "Fallback active"}</span>
-        </section>
-
-        <section className={`ai-status-bar art ${artGenerationState.status}`}>
-          <div>
-            <p className="eyebrow">Art card generation</p>
-            <strong>{artGenerationState.message}</strong>
-            <small>Use Generate art on any draft to create a real image asset for that post.</small>
-          </div>
-          <span>{previewPost?.artSource === "openai" ? "Image ready" : "Provider ready"}</span>
-        </section>
-
-        <section className={`ai-status-bar publish ${publishState.status}`}>
-          <div>
-            <p className="eyebrow">Publishing APIs</p>
-            <strong>{publishState.message}</strong>
-            <small>OpenAI can generate content now. Social publishing turns live after each platform credential is added in Vercel or local env.</small>
-          </div>
-          <span>{integrationStatus.filter((item) => item.status === "ready").length}/{platforms.length} ready</span>
         </section>
 
         <section className="generator-grid" id="generator">
@@ -542,11 +503,14 @@ function App() {
               <textarea rows="4" value={activeBrand.message} onChange={(event) => patchActiveBrand({ message: event.target.value })} />
             </label>
 
-            <section className="business-profile-panel" aria-label="Business profile">
-              <div className="section-heading">
-                <p>Business profile</p>
-                <span>AI memory</span>
-              </div>
+            <details className="business-profile-panel" aria-label="Business profile">
+              <summary>
+                <span>
+                  <strong>Business profile</strong>
+                  <small>AI memory for offers, services, proof, and brand rules</small>
+                </span>
+                <em>Edit</em>
+              </summary>
               <p className="panel-note">This becomes the context Autopilot uses when you only say “generate 2 weeks of content.”</p>
               <div className="field-row">
                 <label>
@@ -598,13 +562,16 @@ function App() {
                   <textarea rows="2" value={activeBrand.businessProfile.brandDonts} onChange={(event) => patchBusinessProfile({ brandDonts: event.target.value })} />
                 </label>
               </div>
-            </section>
+            </details>
 
-            <section className="brand-kit-panel" aria-label="Brand kit">
-              <div className="section-heading">
-                <p>Brand kit</p>
-                <span>used in art</span>
-              </div>
+            <details className="brand-kit-panel" aria-label="Brand kit">
+              <summary>
+                <span>
+                  <strong>Brand kit</strong>
+                  <small>Logo, colors, and art direction</small>
+                </span>
+                <em>Edit</em>
+              </summary>
               <div className="brand-kit-preview">
                 <div
                   className="brand-kit-logo"
@@ -658,7 +625,7 @@ function App() {
                   <input type="color" value={activeBrand.accentColor} onChange={(event) => patchActiveBrand({ accentColor: event.target.value })} />
                 </label>
               </div>
-            </section>
+            </details>
 
             <div className="field-row">
               <label>
@@ -812,21 +779,12 @@ function App() {
   );
 }
 
-function WorkspaceStat({ label, value }) {
+function StatusCard({ label, value, detail }) {
   return (
-    <div className="workspace-stat">
-      <strong>{value}</strong>
+    <div className="status-card">
       <span>{label}</span>
-    </div>
-  );
-}
-
-function WorkflowStep({ label, status, text }) {
-  return (
-    <div className="workflow-step">
-      <span>{status}</span>
-      <strong>{label}</strong>
-      <p>{text}</p>
+      <strong>{value}</strong>
+      <small>{detail}</small>
     </div>
   );
 }
