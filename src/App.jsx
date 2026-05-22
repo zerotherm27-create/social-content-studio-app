@@ -5,7 +5,7 @@ import { generateArtCardForPost, generatePostsForBrand, generatePostsForBrandWit
 import { fetchIntegrationStatus, publishPost, publishQueue } from "./services/integrations.js";
 import { runAutopilotPlan } from "./services/autopilot.js";
 import { schedulePosts, workspaceTotals } from "./services/scheduler.js";
-import { exportWorkspace, loadWorkspace, saveWorkspace } from "./services/storage.js";
+import { exportWorkspace, loadWorkspace, resetStoredWorkspace, saveWorkspace } from "./services/storage.js";
 
 function createSeededWorkspace() {
   const workspace = createInitialWorkspace();
@@ -368,6 +368,20 @@ function App() {
     window.setTimeout(() => setExportLabel("Export plan"), 1600);
   }
 
+  function resetWorkspace() {
+    resetStoredWorkspace();
+    const freshWorkspace = createSeededWorkspace();
+    setWorkspace(freshWorkspace);
+    setSelectedPreviewPostId(null);
+    setPreviewMode("card");
+    setGenerationState({ status: "idle", message: "AI generator ready" });
+    setArtGenerationState({ status: "idle", message: "Art generator ready" });
+    setVideoGenerationState({ status: "idle", message: "Video generator ready" });
+    setAutopilotCommand("Generate 2 weeks of content for this brand. Post daily to all active channels and schedule it.");
+    setAutopilotState({ status: "idle", message: "Autopilot ready" });
+    setPublishState({ status: "idle", message: "Publishing APIs waiting for credentials" });
+  }
+
   async function refreshIntegrationStatus() {
     try {
       const result = await fetchIntegrationStatus();
@@ -530,6 +544,9 @@ function App() {
             </button>
             <button className="ghost-button" onClick={handleExport} type="button">
               {exportLabel}
+            </button>
+            <button className="ghost-button" onClick={resetWorkspace} type="button">
+              Reset
             </button>
           </div>
         </header>

@@ -24,6 +24,11 @@ export function saveWorkspace(workspace) {
   window.localStorage.setItem(storageKey, JSON.stringify(workspace));
 }
 
+export function resetStoredWorkspace() {
+  window.localStorage.removeItem(storageKey);
+  legacyStorageKeys.forEach((legacyKey) => window.localStorage.removeItem(legacyKey));
+}
+
 export function exportWorkspace(workspace) {
   return JSON.stringify({ generatedAt: new Date().toISOString(), ...workspace }, null, 2);
 }
