@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
+import { storeGeneratedArtCard } from "./api/_media-storage.js";
 import { getIntegrationStatus, publishPostToPlatform, publishQueue } from "./api/_platforms.js";
 import { generatePostsForBrand, previewForBrand } from "./src/services/contentGenerator.js";
 
@@ -126,7 +127,7 @@ function fallbackArtCard({ post, brand, reason = "OPENAI_API_KEY is not configur
 
 async function generateArtWithOpenAI({ post, brand, env }) {
   if (!env.OPENAI_API_KEY) {
-    return fallbackArtCard({ post, brand });
+    return storeGeneratedArtCard({ brand, post, result: fallbackArtCard({ post, brand }), env });
   }
 
   const prompt = [
@@ -156,7 +157,7 @@ async function generateArtWithOpenAI({ post, brand, env }) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    return fallbackArtCard({ post, brand, reason: `OpenAI image API returned ${response.status}: ${errorText.slice(0, 160)}` });
+    return storeGeneratedArtCard({ brand, post, result: fallbackArtCard({ post, brand, reason: `OpenAI image API returned ${response.status}: ${errorText.slice(0, 160)}` }), env });
   }
 
   const imageJson = await response.json();
@@ -164,14 +165,19 @@ async function generateArtWithOpenAI({ post, brand, env }) {
   const imageUrl = firstImage?.url || (firstImage?.b64_json ? `data:image/png;base64,${firstImage.b64_json}` : null);
 
   if (!imageUrl) {
-    return fallbackArtCard({ post, brand, reason: "OpenAI image API returned no image" });
+    return storeGeneratedArtCard({ brand, post, result: fallbackArtCard({ post, brand, reason: "OpenAI image API returned no image" }), env });
   }
 
-  return {
+  return storeGeneratedArtCard({
+    brand,
+    post,
+    result: {
     source: "openai",
     model: env.OPENAI_IMAGE_MODEL || "gpt-image-2",
     imageUrl,
-  };
+    },
+    env,
+  });
 }
 
 function contentSchema() {

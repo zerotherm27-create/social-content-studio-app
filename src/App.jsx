@@ -231,6 +231,7 @@ function App() {
                   artImageUrl: result.imageUrl,
                   artSource: result.source,
                   artModel: result.model,
+                  artAsset: result.asset,
                 }
               : item,
           ),
@@ -866,7 +867,7 @@ function PostCard({ isPreviewed, post, onGenerateArt, onPreview, onPublish, onSc
         {post.videoScript ? <p>{post.videoScript}</p> : null}
       </details>
       <div className="media-status">
-        <span>{post.artImageUrl ? "Art image attached" : "No art image yet"}</span>
+        <span>{post.artAsset?.provider === "vercel_blob" ? "Hosted media ready" : post.artImageUrl ? "Art image attached" : "No art image yet"}</span>
         <span>{post.artSource === "openai" ? post.artModel : "OpenAI image ready"}</span>
       </div>
       <div className="card-actions">

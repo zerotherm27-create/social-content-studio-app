@@ -1,4 +1,5 @@
 import { fallbackArtCard, writeJson } from "./_shared.js";
+import { storeGeneratedArtCard } from "./_media-storage.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -9,7 +10,7 @@ export default async function handler(req, res) {
   const { brand, post } = req.body;
 
   if (!process.env.OPENAI_API_KEY) {
-    writeJson(res, 200, fallbackArtCard({ post, brand }));
+    writeJson(res, 200, await storeGeneratedArtCard({ brand, post, result: fallbackArtCard({ post, brand }), env: process.env }));
     return;
   }
 
@@ -40,12 +41,13 @@ export default async function handler(req, res) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    writeJson(res, 200, fallbackArtCard({ post, brand, reason: `OpenAI image API returned ${response.status}: ${errorText.slice(0, 160)}` }));
+    writeJson(res, 200, await storeGeneratedArtCard({ brand, post, result: fallbackArtCard({ post, brand, reason: `OpenAI image API returned ${response.status}: ${errorText.slice(0, 160)}` }), env: process.env }));
     return;
   }
 
   const imageJson = await response.json();
   const firstImage = imageJson.data?.[0];
   const imageUrl = firstImage?.url || (firstImage?.b64_json ? `data:image/png;base64,${firstImage.b64_json}` : null);
-  writeJson(res, 200, imageUrl ? { source: "openai", model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-2", imageUrl } : fallbackArtCard({ post, brand, reason: "OpenAI image API returned no image" }));
+  const result = imageUrl ? { source: "openai", model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-2", imageUrl } : fallbackArtCard({ post, brand, reason: "OpenAI image API returned no image" });
+  writeJson(res, 200, await storeGeneratedArtCard({ brand, post, result, env: process.env }));
 }

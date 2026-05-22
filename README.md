@@ -61,6 +61,13 @@ Set these environment variables in Vercel before enabling live AI:
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 - `OPENAI_IMAGE_MODEL`
+- `BLOB_READ_WRITE_TOKEN`
+
+## Media Storage
+
+Generated art cards are routed through `api/_media-storage.js`. The current provider is Vercel Blob. If `BLOB_READ_WRITE_TOKEN` is configured, art cards are uploaded to Blob and returned as public HTTPS URLs. If it is not configured, the app keeps using inline fallback media so local development still works.
+
+This keeps the app upgradeable: Railway Buckets, Cloudflare R2, or S3 can later replace Vercel Blob by changing the storage adapter instead of the UI.
 
 ## Publishing API Setup
 
