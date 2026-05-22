@@ -8,6 +8,15 @@ export const platforms = [
   { id: "youtube", name: "YouTube", format: "Shorts", media: "Video", ratio: "9:16", width: 1080, height: 1920 },
 ];
 
+export const adPlatforms = [
+  { id: "meta", name: "Meta Ads", placements: "Facebook + Instagram", creative: "Image, reel, story" },
+  { id: "google", name: "Google Ads", placements: "Search + Performance Max", creative: "Headlines, descriptions, assets" },
+  { id: "tiktokAds", name: "TikTok Ads", placements: "For You feed", creative: "Short video hook" },
+  { id: "linkedinAds", name: "LinkedIn Ads", placements: "Sponsored content", creative: "Professional feed ad" },
+];
+
+export const adObjectives = ["Leads", "Bookings", "Website visits", "Messages", "Sales", "Awareness"];
+
 const defaultBusinessProfiles = {
   luna: {
     industry: "Specialty cafe",
@@ -132,6 +141,20 @@ export function createBusinessProfile(brand) {
   };
 }
 
+export function createAdBrief(brand) {
+  return {
+    objective: brand.adBrief?.objective ?? "Bookings",
+    platformIds: brand.adBrief?.platformIds ?? ["meta", "google"],
+    budget: brand.adBrief?.budget ?? "500 PHP per day",
+    duration: brand.adBrief?.duration ?? "7 days",
+    offer: brand.adBrief?.offer ?? brand.businessProfile?.mainOffer ?? brand.message ?? "",
+    audience: brand.adBrief?.audience ?? brand.businessProfile?.idealCustomer ?? brand.audience ?? "",
+    landingPage: brand.adBrief?.landingPage ?? brand.businessProfile?.bookingLink ?? "",
+    location: brand.adBrief?.location ?? brand.businessProfile?.location ?? "",
+    notes: brand.adBrief?.notes ?? "Start with conservative copy, clear CTA, and no exaggerated claims.",
+  };
+}
+
 export function createDateFromOffset(offset) {
   const date = new Date();
   date.setDate(date.getDate() + offset);
@@ -178,6 +201,8 @@ export function normalizeBrand(brand) {
       ...createBusinessProfile(fallback),
       ...createBusinessProfile(brand),
     },
+    adBrief: createAdBrief(brand),
+    adVariations: brand.adVariations ?? [],
     logoText: brand.logoText ?? brand.initials ?? fallback.logoText,
     primaryColor: brand.primaryColor ?? fallback.primaryColor,
     secondaryColor: brand.secondaryColor ?? fallback.secondaryColor,

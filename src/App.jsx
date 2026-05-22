@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { createInitialWorkspace, fontStyles, goals, normalizeBrand, platforms, tones } from "./data/models.js";
+import { adObjectives, adPlatforms, createInitialWorkspace, fontStyles, goals, normalizeBrand, platforms, tones } from "./data/models.js";
+import { generateAdVariations } from "./services/adsGenerator.js";
 import { generateArtCardForPost, generatePostsForBrand, generatePostsForBrandWithAI, previewForBrand } from "./services/contentGenerator.js";
 import { fetchIntegrationStatus, publishPost, publishQueue } from "./services/integrations.js";
 import { runAutopilotPlan } from "./services/autopilot.js";
@@ -86,6 +87,37 @@ function App() {
           ...patch,
         },
       })),
+    }));
+  }
+
+  function patchAdBrief(patch) {
+    setWorkspace((current) => ({
+      ...current,
+      brands: updateBrand(current.brands, current.activeBrandId, (brand) => ({
+        ...brand,
+        adBrief: {
+          ...brand.adBrief,
+          ...patch,
+        },
+      })),
+    }));
+  }
+
+  function toggleAdPlatform(platformId) {
+    setWorkspace((current) => ({
+      ...current,
+      brands: updateBrand(current.brands, current.activeBrandId, (brand) => {
+        const ids = new Set(brand.adBrief.platformIds);
+        if (ids.has(platformId)) ids.delete(platformId);
+        else ids.add(platformId);
+        return {
+          ...brand,
+          adBrief: {
+            ...brand.adBrief,
+            platformIds: [...ids],
+          },
+        };
+      }),
     }));
   }
 
@@ -339,6 +371,17 @@ function App() {
     }
   }
 
+  function generateAds() {
+    const variations = generateAdVariations(activeBrand);
+    setWorkspace((current) => ({
+      ...current,
+      brands: updateBrand(current.brands, activeBrand.id, (brand) => ({
+        ...brand,
+        adVariations: variations,
+      })),
+    }));
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -383,6 +426,9 @@ function App() {
           </a>
           <a className="nav-item" href="#calendar">
             Calendar
+          </a>
+          <a className="nav-item" href="#ads">
+            Ads
           </a>
           <a className="nav-item" href="#channels">
             Channels
@@ -712,6 +758,73 @@ function App() {
           </section>
         </section>
 
+        <section className="ads-studio-panel" id="ads">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Ads Studio</p>
+              <h3>Ad creative generator</h3>
+              <p className="panel-note">Generate ad copy, hooks, audiences, and creative prompts. Direct ad buying comes later after ad account APIs are approved.</p>
+            </div>
+            <button className="primary-button" onClick={generateAds} type="button">
+              Generate ad set
+            </button>
+          </div>
+
+          <div className="ad-brief-grid">
+            <label>
+              Objective
+              <select value={activeBrand.adBrief.objective} onChange={(event) => patchAdBrief({ objective: event.target.value })}>
+                {adObjectives.map((objective) => (
+                  <option key={objective}>{objective}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Budget
+              <input value={activeBrand.adBrief.budget} onChange={(event) => patchAdBrief({ budget: event.target.value })} />
+            </label>
+            <label>
+              Duration
+              <input value={activeBrand.adBrief.duration} onChange={(event) => patchAdBrief({ duration: event.target.value })} />
+            </label>
+            <label>
+              Landing page
+              <input value={activeBrand.adBrief.landingPage} onChange={(event) => patchAdBrief({ landingPage: event.target.value })} />
+            </label>
+            <label className="wide-field">
+              Offer
+              <textarea rows="2" value={activeBrand.adBrief.offer} onChange={(event) => patchAdBrief({ offer: event.target.value })} />
+            </label>
+            <label className="wide-field">
+              Ad audience
+              <textarea rows="2" value={activeBrand.adBrief.audience} onChange={(event) => patchAdBrief({ audience: event.target.value })} />
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>Ad platforms</legend>
+            <div className="platform-pills">
+              {adPlatforms.map((platform) => (
+                <label key={platform.id}>
+                  <input checked={activeBrand.adBrief.platformIds.includes(platform.id)} onChange={() => toggleAdPlatform(platform.id)} type="checkbox" />
+                  {platform.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="ad-grid">
+            {activeBrand.adVariations.length === 0 ? (
+              <div className="ad-empty">
+                <strong>No ad creatives yet</strong>
+                <p>Choose an objective and platforms, then generate your first ad set.</p>
+              </div>
+            ) : (
+              activeBrand.adVariations.map((ad) => <AdCard ad={ad} key={ad.id} />)
+            )}
+          </div>
+        </section>
+
         <section className="content-board">
           <div className="board-header">
             <div>
@@ -795,6 +908,34 @@ function Metric({ label, value }) {
       <strong>{value}</strong>
       <span>{label}</span>
     </div>
+  );
+}
+
+function AdCard({ ad }) {
+  return (
+    <article className="ad-card">
+      <header>
+        <span>{ad.platformName}</span>
+        <small>{ad.angle}</small>
+      </header>
+      <h4>{ad.headline}</h4>
+      <p>{ad.primaryText}</p>
+      <dl>
+        <div>
+          <dt>CTA</dt>
+          <dd>{ad.callToAction}</dd>
+        </div>
+        <div>
+          <dt>Budget</dt>
+          <dd>{ad.budget}</dd>
+        </div>
+      </dl>
+      <details>
+        <summary>Creative prompt</summary>
+        <p>{ad.creativePrompt}</p>
+        <p>{ad.complianceNote}</p>
+      </details>
+    </article>
   );
 }
 
