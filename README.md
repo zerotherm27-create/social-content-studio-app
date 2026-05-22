@@ -1,10 +1,10 @@
-# Social Content Studio App
+# Katmon Studio
 
-Phase 1 foundation for a multi-brand social content generator and scheduler.
+AI marketing studio for generating, scheduling, storing, and publishing branded business content.
 
 ## Current Scope
 
-- Multi-brand workspaces with isolated briefs, selected platforms, drafts, and queues.
+- Multi-brand workspaces with isolated business profiles, briefs, selected platforms, drafts, and queues.
 - AI generation endpoint for captions, hashtags, art card prompts, video scripts, and preview copy.
 - Local deterministic fallback when `OPENAI_API_KEY` is not configured.
 - Local persistence through `localStorage`.

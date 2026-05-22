@@ -343,10 +343,10 @@ function App() {
     <main className="app-shell">
       <aside className="sidebar">
         <div className="brand-lockup">
-          <div className="brand-mark">SC</div>
+          <div className="brand-mark">KS</div>
           <div>
-            <p className="eyebrow">Social Content Studio</p>
-            <h1>Generate, schedule, publish.</h1>
+            <p className="eyebrow">Katmon Studio</p>
+            <h1>Grow your brand content.</h1>
           </div>
         </div>
 
@@ -422,8 +422,8 @@ function App() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Campaign cockpit</p>
-            <h2>AI content generator</h2>
+            <p className="eyebrow">Katmon cockpit</p>
+            <h2>AI marketing studio</h2>
             <p className="active-brand-line">{activeBrand.name} workspace</p>
           </div>
           <div className="topbar-actions">
